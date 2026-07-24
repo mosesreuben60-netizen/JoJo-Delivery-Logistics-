@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book a delivery — JoJo Delivery</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+  <nav class="nav">
+    <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Delivery</a>
+    <div class="nav-links">
+      <a href="track.html">Track a delivery</a>
+      <a href="admin.html">Rider login</a>
+    </div>
+    <span class="status-chip" id="availability-chip">Checking availability…</span>
+  </nav>
+
+  <main class="wrap" style="padding: 40px 24px 60px;">
+    <div style="max-width:560px; margin:0 auto 28px;">
+      <span class="eyebrow">Book a delivery</span>
+      <h1 style="font-size:1.9rem; margin-top:8px;">Tell us what needs to move</h1>
+      <p class="lede">Fill this out, pay to confirm, and you'll get a tracking code straight after.</p>
+    </div>
+
+    <form class="form-card" id="booking-form">
+      <div class="success-banner" id="success-banner"></div>
+
+      <label>Delivery type</label>
+      <div class="tier-group" id="tier-group"></div>
+
+      <div class="field-row">
+        <div>
+          <label for="customer_name">Your name</label>
+          <input type="text" id="customer_name" required placeholder="e.g. Amaka Okafor">
+        </div>
+        <div>
+          <label for="customer_phone">Phone number</label>
+          <input type="tel" id="customer_phone" required placeholder="080…">
+        </div>
+      </div>
+
+      <label for="pickup_address">Pickup address</label>
+      <input type="text" id="pickup_address" required placeholder="Where should the rider collect the package?">
+
+      <label for="dropoff_address">Drop-off address</label>
+      <input type="text" id="dropoff_address" required placeholder="Where is it going?">
+
+      <label for="package_note">Package details <span style="color:var(--slate-dim); font-weight:400;">(optional)</span></label>
+      <textarea id="package_note" placeholder="What is it, roughly how big, anything fragile…"></textarea>
+
+      <div class="error-text" id="form-error"></div>
+
+      <button type="submit" class="btn btn-primary btn-block" id="submit-btn" style="margin-top:22px;">
+        Continue to payment
+      </button>
+      <p class="helper" style="text-align:center; margin-top:12px;">
+        Prefer to sort details on WhatsApp first? <a href="#" id="whatsapp-fallback" style="color:var(--orange);">Message the rider directly</a>.
+      </p>
+    </form>
+  </main>
+
+  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span></div>
+</div>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  let selectedTier = null;
+
+  // Render tier options
+  const tierGroup = document.getElementById("tier-group");
+  RUSHRIDA_CONFIG.TIERS.forEach((t, i) => {
+    const label = document.createElement("label");
+    label.className = "tier" + (i === 0 ? " active" : "");
+    label.innerHTML = `
+      <input type="radio" name="tier" value="${t.id}" ${i === 0 ? "checked" : ""}>
+      <div class="tier-title">${t.label}</div>
+      <div class="tier-price">${formatNaira(t.price)} · ${t.desc}</div>
+    `;
+    tierGroup.appendChild(label);
+  });
+  selectedTier = RUSHRIDA_CONFIG.TIERS[0];
+  tierGroup.addEventListener("change", e => {
+    selectedTier = RUSHRIDA_CONFIG.TIERS.find(t => t.id === e.target.value);
+    document.querySelectorAll(".tier").forEach(el => el.classList.remove("active"));
+    e.target.closest(".tier").classList.add("active");
+  });
+
+  // WhatsApp fallback link
+  document.getElementById("whatsapp-fallback").href =
+    whatsappLink("Hi! I'd like to book a delivery — can we sort the details here?");
+
+  // Check rider availability
+  (async () => {
+    const chip = document.getElementById("availability-chip");
+    try {
+      const data = await apiFetch("/api/availability");
+      if (data.isAvailable) {
+        chip.textContent = "Rider available now";
+        chip.classList.remove("wait");
+      } else {
+        chip.textContent = "Rider busy — bookings queue up";
+        chip.classList.add("wait");
+      }
+    } catch {
+      chip.textContent = "Availability unknown";
+    }
+  })();
+
+  const form = document.getElementById("booking-form");
+  const errorEl = document.getElementById("form-error");
+  const submitBtn = document.getElementById("submit-btn");
+  const successBanner = document.getElementById("success-banner");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.style.display = "none";
+
+    const payload = {
+      customerName: document.getElementById("customer_name").value.trim(),
+      customerPhone: document.getElementById("customer_phone").value.trim(),
+      pickupAddress: document.getElementById("pickup_address").value.trim(),
+      dropoffAddress: document.getElementById("dropoff_address").value.trim(),
+      packageNote: document.getElementById("package_note").value.trim(),
+      tierId: selectedTier.id
+    };
+
+    if (!payload.customerName || !payload.customerPhone || !payload.pickupAddress || !payload.dropoffAddress) {
+      errorEl.textContent = "Please fill in all required fields.";
+      errorEl.style.display = "block";
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="loading-spin"></span> Saving booking…`;
+
+    // 1. Save the booking first (unpaid) — server assigns tracking code and price
+    let booking;
+    try {
+      booking = await apiFetch("/api/bookings", { method: "POST", body: payload });
+    } catch (err) {
+      errorEl.textContent = "Something went wrong saving your booking. Please try again.";
+      errorEl.style.display = "block";
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Continue to payment";
+      return;
+    }
+
+    // 2. Launch Paystack for payment
+    submitBtn.innerHTML = `<span class="loading-spin"></span> Opening payment…`;
+
+    const handler = PaystackPop.setup({
+      key: RUSHRIDA_CONFIG.PAYSTACK_PUBLIC_KEY,
+      email: `${booking.customerPhone}@jojo.customer`, // Paystack requires an email; synthesize one if you don't collect it
+      amount: booking.price * 100, // kobo
+      currency: "NGN",
+      ref: booking.trackingCode,
+      metadata: { booking_id: booking._id, tracking_code: booking.trackingCode },
+      callback: function (response) {
+        // Don't trust this callback alone — verify server-side before showing success
+        submitBtn.innerHTML = `<span class="loading-spin"></span> Confirming payment…`;
+        apiFetch("/api/payments/verify", { method: "POST", body: { reference: response.reference } })
+          .then(() => showSuccess(booking.trackingCode))
+          .catch(() => {
+            errorEl.textContent = "We received a payment response but couldn't confirm it yet. Your booking code is " + booking.trackingCode + " — contact the rider if this doesn't resolve shortly.";
+            errorEl.style.display = "block";
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Continue to payment";
+          });
+      },
+      onClose: function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Continue to payment";
+        errorEl.textContent = "Payment window closed — your booking is saved as unpaid. You can pay later by contacting the rider with your code: " + booking.trackingCode;
+        errorEl.style.display = "block";
+      }
+    });
+    handler.openIframe();
+  });
+
+  function showSuccess(code) {
+    form.querySelectorAll("input, textarea, button").forEach(el => el.disabled = true);
+    successBanner.style.display = "block";
+    successBanner.innerHTML = `Booking confirmed! Your tracking code is <strong style="font-family:var(--mono);">${code}</strong>. <a href="track.html?code=${code}" style="color:var(--moss-bright); text-decoration:underline;">Track it now →</a>`;
+  }
+</script>
+</body>
+            </html>
