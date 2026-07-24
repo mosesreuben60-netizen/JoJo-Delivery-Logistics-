@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rider dashboard — JoJo Delivery</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- LOGIN VIEW -->
+<div class="page" id="login-view">
+  <nav class="nav">
+    <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Delivery</a>
+  </nav>
+  <main class="wrap" style="padding: 60px 24px; display:flex; justify-content:center;">
+    <form class="form-card" id="login-form" style="width:100%;">
+      <span class="eyebrow">Rider login</span>
+      <h1 style="font-size:1.5rem; margin-top:8px;">Sign in to your dashboard</h1>
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" required>
+      <label for="login-password">Password</label>
+      <input type="password" id="login-password" required>
+      <div class="error-text" id="login-error"></div>
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top:20px;" id="login-btn">Sign in</button>
+      <p class="helper" style="text-align:center; margin-top:14px;">Login set up via ADMIN_EMAIL / ADMIN_PASSWORD_HASH on Railway — see README.md.</p>
+    </form>
+  </main>
+</div>
+
+<!-- DASHBOARD VIEW -->
+<div class="admin-shell" id="dashboard-view" style="display:none;">
+  <aside class="admin-side">
+    <div class="brand"><div class="brand-mark">J</div>JoJo Delivery</div>
+    <nav class="admin-nav">
+      <a href="#" class="active">Bookings</a>
+      <a href="index.html" target="_blank">View site ↗</a>
+      <a href="#" id="logout-link">Sign out</a>
+    </nav>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-top">
+      <div>
+        <span class="eyebrow">Dashboard</span>
+        <h1 style="font-size:1.6rem; margin-top:6px;">Today's bookings</h1>
+      </div>
+      <div class="availability-toggle">
+        <span id="avail-label">Available for new bookings</span>
+        <button class="switch" id="avail-switch"></button>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num" id="stat-pending">–</div><div class="stat-label">Pending</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-progress">–</div><div class="stat-label">In progress</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-done">–</div><div class="stat-label">Delivered today</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-earnings">–</div><div class="stat-label">Paid today</div></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th><th>Customer</th><th>Route</th><th>Tier</th><th>Payment</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="bookings-tbody">
+          <tr><td colspan="7" style="text-align:center; color:var(--slate);">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  const loginView = document.getElementById("login-view");
+  const dashboardView = document.getElementById("dashboard-view");
+
+  function showLogin() { loginView.style.display = "flex"; dashboardView.style.display = "none"; }
+  function showDashboard() {
+    loginView.style.display = "none";
+    dashboardView.style.display = "grid";
+    loadAvailability();
+    loadBookings();
+  }
+
+  // If we already have a token, try it; if it's expired the first
+  // authenticated request below will kick back to login.
+  if (getAdminToken()) showDashboard(); else showLogin();
+
+  document.getElementById("login-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const btn = document.getElementById("login-btn");
+    const errEl = document.getElementById("login-error");
+    errEl.style.display = "none";
+    btn.disabled = true;
+    btn.innerHTML = `<span class="loading-spin"></span> Signing in…`;
+
+    try {
+      const { token } = await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: {
+          email: document.getElementById("login-email").value.trim(),
+          password: document.getElementById("login-password").value
+        }
+      });
+      setAdminToken(token);
+      showDashboard();
+    } catch (err) {
+      errEl.textContent = "Couldn't sign in — check your email and password.";
+      errEl.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Sign in";
+    }
+  });
+
+  document.getElementById("logout-link").addEventListener("click", e => {
+    e.preventDefault();
+    clearAdminToken();
+    showLogin();
+  });
+
+  // If any authenticated call comes back 401, the token's dead — bounce to login
+  function handleAuthError(err) {
+    if (err.status === 401) {
+      clearAdminToken();
+      showLogin();
+      return true;
+    }
+    return false;
+  }
+
+  // ---- Availability toggle ----
+  const switchBtn = document.getElementById("avail-switch");
+  const availLabel = document.getElementById("avail-label");
+  let currentAvailable = true;
+
+  async function loadAvailability() {
+    try {
+      const data = await apiFetch("/api/availability");
+      currentAvailable = data.isAvailable;
+      renderSwitch();
+    } catch (err) {
+      handleAuthError(err);
+    }
+  }
+  function renderSwitch() {
+    switchBtn.classList.toggle("on", currentAvailable);
+    availLabel.textContent = currentAvailable ? "Available for new bookings" : "Paused — not taking new bookings";
+  }
+  switchBtn.addEventListener("click", async () => {
+    currentAvailable = !currentAvailable;
+    renderSwitch();
+    try {
+      await apiFetch("/api/availability", { method: "PATCH", auth: true, body: { isAvailable: currentAvailable } });
+    } catch (err) {
+      handleAuthError(err);
+    }
+  }); // ---- Bookings table ----
+  async function loadBookings() {
+    const tbody = document.getElementById("bookings-tbody");
+    try {
+      const data = await apiFetch("/api/bookings", { auth: true });
+      renderStats(data);
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--slate);">No bookings yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.map(rowHtml).join("");
+      tbody.querySelectorAll("select.status-select").forEach(sel => {
+        sel.addEventListener("change", async () => {
+          try {
+            await apiFetch(`/api/bookings/${sel.dataset.id}/status`, { method: "PATCH", auth: true, body: { status: sel.value } });
+            loadBookings();
+          } catch (err) {
+            if (!handleAuthError(err)) alert("Couldn't update status — try again.");
+          }
+        });
+      });
+    } catch (err) {
+      if (handleAuthError(err)) return;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--red);">Couldn't load bookings.</td></tr>`;
+    }
+  }
+
+  function badgeClass(status) {
+    if (status === "delivered") return "badge-done";
+    if (status === "cancelled") return "badge-cancel";
+    if (status === "pending") return "badge-pending";
+    return "badge-progress";
+  }
+
+  function rowHtml(b) {
+    const statusOptions = STATUS_FLOW.concat([{ key: "cancelled", label: "Cancelled" }])
+      .map(s => `<option value="${s.key}" ${s.key === b.status ? "selected" : ""}>${s.label}</option>`).join("");
+    return `
+      <tr>
+        <td style="font-family:var(--mono);">${b.trackingCode}</td>
+        <td>${b.customerName}<br><span style="color:var(--slate-dim); font-size:0.8rem;">${b.customerPhone}</span></td>
+        <td style="max-width:220px;">${b.pickupAddress} → ${b.dropoffAddress}</td>
+        <td>${b.tierLabel}<br><span style="color:var(--slate-dim); font-size:0.8rem;">${formatNaira(b.price)}</span></td>
+        <td><span class="badge ${b.paymentStatus === "paid" ? "badge-done" : "badge-pending"}">${b.paymentStatus}</span></td>
+        <td><span class="badge ${badgeClass(b.status)}">${b.status.replace("_", " ")}</span></td>
+        <td><select class="mini status-select" data-id="${b._id}">${statusOptions}</select></td>
+      </tr>
+    `;
+  }
+
+  function renderStats(bookings) {
+    const today = new Date().toDateString();
+    const isToday = b => new Date(b.createdAt).toDateString() === today;
+
+    document.getElementById("stat-pending").textContent = bookings.filter(b => b.status === "pending").length;
+    document.getElementById("stat-progress").textContent = bookings.filter(b => ["confirmed","picked_up","in_transit"].includes(b.status)).length;
+    document.getElementById("stat-done").textContent = bookings.filter(b => b.status === "delivered" && isToday(b)).length;
+    const earnings = bookings.filter(b => b.paymentStatus === "paid" && isToday(b)).reduce((sum, b) => sum + Number(b.price), 0);
+    document.getElementById("stat-earnings").textContent = formatNaira(earnings);
+  }
+</script>
+</body>
+</html>
