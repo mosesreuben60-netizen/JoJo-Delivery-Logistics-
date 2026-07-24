@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JoJo Delivery — Book a rider in minutes</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+  <nav class="nav">
+    <div class="brand"><div class="brand-mark">J</div>JoJo Delivery</div>
+    <div class="nav-links">
+      <a href="index.html#how">How it works</a>
+      <a href="track.html">Track a delivery</a>
+      <a href="admin.html">Rider login</a>
+    </div>
+    <a href="book.html" class="btn btn-primary">Book now</a>
+  </nav>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">Same-day bike delivery · <span data-rr-city>Warri</span></span>
+        <h1>Skip the WhatsApp back-and-forth. Book, track, done.</h1>
+        <p class="lede">One rider, fully booked-out schedule, live status on every drop. No more "where's my package?" texts at midnight — JoJo Delivery shows you exactly where things stand.</p>
+        <div class="hero-actions">
+          <a href="book.html" class="btn btn-primary">Book a delivery</a>
+          <a href="track.html" class="btn btn-ghost">Track an order</a>
+        </div>
+      </div>
+
+      <div class="waybill">
+        <div class="waybill-row"><span class="waybill-label">Tracking</span><span class="waybill-value">RR-8K3PQ2</span></div>
+        <div class="waybill-row"><span class="waybill-label">Route</span><span class="waybill-value">Effurun → Enerhen</span></div>
+        <div class="waybill-row"><span class="waybill-label">Rider</span><span class="waybill-value" data-rr-rider>Your Rider's Name</span></div>
+        <div class="waybill-row"><span class="waybill-label">Status</span><span class="status-chip">On the way</span></div>
+        <div class="pulse-track">
+          <div class="pulse-dot on"></div><div class="pulse-dot on"></div><div class="pulse-dot on"></div>
+          <div class="pulse-dot"></div><div class="pulse-dot"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="section-head">
+        <span class="eyebrow">How it works</span>
+        <h2 style="margin-top:8px; font-size:1.7rem;">Three steps, no group chat required</h2>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">①</div>
+          <h3>Book your slot</h3>
+          <p>Pick a delivery tier, drop pickup and drop-off details, and pay securely — no calling around to check if the rider is free.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">②</div>
+          <h3>Get your tracking code</h3>
+          <p>Every booking gets a short code like RR-8K3PQ2. Use it any time to see exactly what stage your delivery is at.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">③</div>
+          <h3>Watch it move</h3>
+          <p>Status updates from pickup to drop-off, so you know when to expect your package — without sending a single follow-up message.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <span class="eyebrow">Pricing</span>
+        <h2 style="margin-top:8px; font-size:1.7rem;">Straightforward tiers</h2>
+      </div>
+      <div class="grid-3" id="pricing-cards">
+        <!-- filled by JS from config.js -->
+      </div>
+    </section>
+  </main>
+
+  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span></div>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  const grid = document.getElementById("pricing-cards");
+  RUSHRIDA_CONFIG.TIERS.forEach(t => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<h3>${t.label}</h3><p>${t.desc}</p><p style="color:var(--orange); font-family:var(--mono); margin-top:10px; font-size:0.95rem;">${formatNaira(t.price)}</p>`;
+    grid.appendChild(card);
+  });
+</script>
+</body>
+  </html>
