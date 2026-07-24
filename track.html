@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track a delivery — JoJo Delivery</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+  <nav class="nav">
+    <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Delivery</a>
+    <div class="nav-links">
+      <a href="book.html">Book a delivery</a>
+      <a href="admin.html">Rider login</a>
+    </div>
+    <a href="book.html" class="btn btn-primary">Book now</a>
+  </nav>
+
+  <main class="wrap" style="padding: 48px 24px 60px;">
+    <div style="text-align:center; max-width:520px; margin:0 auto 36px;">
+      <span class="eyebrow">Track a delivery</span>
+      <h1 style="font-size:1.9rem; margin-top:8px;">Where's my package?</h1>
+      <p class="lede" style="margin:0 auto;">Enter the tracking code from your booking confirmation.</p>
+    </div>
+
+    <form class="track-lookup" id="lookup-form">
+      <input type="text" id="code-input" placeholder="RR-8K3PQ2" autocomplete="off">
+      <button type="submit" class="btn btn-primary">Track</button>
+    </form>
+
+    <div id="result-area"></div>
+  </main>
+
+  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span></div>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  const resultArea = document.getElementById("result-area");
+  const form = document.getElementById("lookup-form");
+  const input = document.getElementById("code-input");
+
+  // Pre-fill from ?code= param
+  const params = new URLSearchParams(location.search);
+  if (params.get("code")) {
+    input.value = params.get("code");
+    lookup(params.get("code"));
+  }
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    if (input.value.trim()) lookup(input.value.trim());
+  });
+
+  async function lookup(code) {
+    resultArea.innerHTML = `<p style="text-align:center; color:var(--slate);">Looking up ${code}…</p>`;
+    try {
+      const booking = await apiFetch(`/api/bookings/code/${encodeURIComponent(code)}`);
+      render(booking);
+    } catch {
+      resultArea.innerHTML = `<p style="text-align:center; color:var(--red);">No booking found for that code. Double-check and try again.</p>`;
+    }
+  }
+
+  function render(b) {
+    const idx = statusIndex(b.status);
+    const cancelled = b.status === "cancelled";
+
+    let stepsHtml = "";
+    if (cancelled) {
+      stepsHtml = `<div class="tl-step done"><div class="tl-dot" style="background:var(--red); border-color:var(--red);"></div>
+        <div><div class="tl-title">Booking cancelled</div><div class="tl-time">${formatDateTime(b.updatedAt)}</div></div></div>`;
+    } else {
+      stepsHtml = STATUS_FLOW.map((s, i) => `
+        <div class="tl-step ${i < idx ? "done" : i === idx ? "current" : ""}">
+          <div class="tl-dot"></div>
+          <div>
+            <div class="tl-title">${s.label}</div>
+            <div class="tl-time">${i === idx ? formatDateTime(b.updatedAt) : i < idx ? "" : "Pending"}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    resultArea.innerHTML = `
+      <div class="waybill" style="max-width:520px; margin:0 auto 32px;">
+        <div class="waybill-row"><span class="waybill-label">Tracking</span><span class="waybill-value">${b.trackingCode}</span></div>
+        <div class="waybill-row"><span class="waybill-label">Route</span><span class="waybill-value">${b.pickupAddress} → ${b.dropoffAddress}</span></div>
+        <div class="waybill-row"><span class="waybill-label">Service</span><span class="waybill-value">${b.tierLabel}</span></div>
+        <div class="waybill-row"><span class="waybill-label">Payment</span><span class="waybill-value">${b.paymentStatus === "paid" ? "Paid" : "Unpaid"} · ${formatNaira(b.price)}</span></div>
+      </div>
+      <div class="timeline">${stepsHtml}</div>
+    `;
+  }
+</script>
+</body>
+  </html>
