@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Book a delivery — JoJo Delivery</title>
+<title>Book a delivery — JoJo Active Logistics</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="page">
 
   <nav class="nav">
-    <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Delivery</a>
+    <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Active Logistics</a>
     <div class="nav-links">
       <a href="track.html">Track a delivery</a>
     </div>
     <div style="display:flex; align-items:center; gap:10px;">
-      <a href="driver.html" class="btn btn-ghost">Driver</a>
+      <a href="https://mosesreuben60-netizen.github.io/jojo-driver-portal/" target="_blank" class="btn btn-ghost">Driver</a>
       <span class="status-chip" id="availability-chip">Checking availability…</span>
     </div>
   </nav>
@@ -27,22 +27,17 @@
       <p class="lede">Fill this out, pay to confirm, and you'll get a tracking code straight after.</p>
     </div>
 
-    <form class="form-card" id="booking-form">
+    <!-- Shown if the customer isn't logged in -->
+    <div class="form-card" id="login-required" style="display:none; text-align:center;">
+      <p style="margin-bottom:16px;">You'll need to log in or create a free account first — that's how we tie deliveries to your history and keep you updated.</p>
+      <a href="index.html" class="btn btn-primary btn-block">Log in / Sign up</a>
+    </div>
+
+    <form class="form-card" id="booking-form" style="display:none;">
       <div class="success-banner" id="success-banner"></div>
 
       <label>Delivery type</label>
       <div class="tier-group" id="tier-group"></div>
-
-      <div class="field-row">
-        <div>
-          <label for="customer_name">Your name</label>
-          <input type="text" id="customer_name" required placeholder="e.g. Amaka Okafor">
-        </div>
-        <div>
-          <label for="customer_phone">Phone number</label>
-          <input type="tel" id="customer_phone" required placeholder="080…">
-        </div>
-      </div>
 
       <label for="pickup_address">Pickup address</label>
       <input type="text" id="pickup_address" required placeholder="Where should the rider collect the package?">
@@ -59,21 +54,27 @@
         Continue to payment
       </button>
       <p class="helper" style="text-align:center; margin-top:12px;">
-        Prefer to sort details on WhatsApp first? <a href="#" id="whatsapp-fallback" style="color:var(--orange);">Message the rider directly</a>.
+        Prefer to sort details on WhatsApp first? <a href="#" id="whatsapp-fallback" style="color:var(--yellow);">Message us directly</a>.
       </p>
     </form>
   </main>
 
-  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span><br><a href="driver.html" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
+  <div class="footer">JoJo Active Logistics · <span id="footer-address"></span><br><a href="https://mosesreuben60-netizen.github.io/jojo-driver-portal/" target="_blank" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
 </div>
 
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script>
+  document.getElementById("footer-address").textContent = RUSHRIDA_CONFIG.SERVICE_ADDRESS;
+
+  // Gate the form behind login
+  const isLoggedIn = !!getCustomerToken();
+  document.getElementById("login-required").style.display = isLoggedIn ? "none" : "block";
+  document.getElementById("booking-form").style.display = isLoggedIn ? "block" : "none";
+
   let selectedTier = null;
 
-  // Render tier options
   const tierGroup = document.getElementById("tier-group");
   RUSHRIDA_CONFIG.TIERS.forEach((t, i) => {
     const label = document.createElement("label");
@@ -92,11 +93,15 @@
     e.target.closest(".tier").classList.add("active");
   });
 
-  // WhatsApp fallback link
+  // Prefill drop-off if the customer typed it into the home-screen search bar
+  const params = new URLSearchParams(location.search);
+  if (params.get("dropoff")) {
+    document.getElementById("dropoff_address").value = params.get("dropoff");
+  }
+
   document.getElementById("whatsapp-fallback").href =
     whatsappLink("Hi! I'd like to book a delivery — can we sort the details here?");
 
-  // Check rider availability
   (async () => {
     const chip = document.getElementById("availability-chip");
     try {
@@ -123,16 +128,14 @@
     errorEl.style.display = "none";
 
     const payload = {
-      customerName: document.getElementById("customer_name").value.trim(),
-      customerPhone: document.getElementById("customer_phone").value.trim(),
       pickupAddress: document.getElementById("pickup_address").value.trim(),
       dropoffAddress: document.getElementById("dropoff_address").value.trim(),
       packageNote: document.getElementById("package_note").value.trim(),
       tierId: selectedTier.id
     };
 
-    if (!payload.customerName || !payload.customerPhone || !payload.pickupAddress || !payload.dropoffAddress) {
-      errorEl.textContent = "Please fill in all required fields.";
+    if (!payload.pickupAddress || !payload.dropoffAddress) {
+      errorEl.textContent = "Please fill in both addresses.";
       errorEl.style.display = "block";
       return;
     }
@@ -140,35 +143,39 @@
     submitBtn.disabled = true;
     submitBtn.innerHTML = `<span class="loading-spin"></span> Saving booking…`;
 
-    // 1. Save the booking first (unpaid) — server assigns tracking code and price
     let booking;
     try {
-      booking = await apiFetch("/api/bookings", { method: "POST", body: payload });
+      booking = await apiFetch("/api/bookings", { method: "POST", auth: true, body: payload });
     } catch (err) {
-      errorEl.textContent = "Something went wrong saving your booking. Please try again.";
+      if (err.status === 401) {
+        errorEl.textContent = "Your session expired — please log in again.";
+        errorEl.style.display = "block";
+        clearCustomerSession();
+        setTimeout(() => window.location.href = "index.html", 1500);
+        return;
+      }
+      errorEl.textContent = err.message || "Something went wrong saving your booking. Please try again.";
       errorEl.style.display = "block";
       submitBtn.disabled = false;
       submitBtn.textContent = "Continue to payment";
       return;
     }
 
-    // 2. Launch Paystack for payment
     submitBtn.innerHTML = `<span class="loading-spin"></span> Opening payment…`;
 
     const handler = PaystackPop.setup({
       key: RUSHRIDA_CONFIG.PAYSTACK_PUBLIC_KEY,
-      email: `${booking.customerPhone}@jojo.customer`, // Paystack requires an email; synthesize one if you don't collect it
-      amount: booking.price * 100, // kobo
+      email: `${booking.customerPhone}@jojo.customer`,
+      amount: booking.price * 100,
       currency: "NGN",
       ref: booking.trackingCode,
       metadata: { booking_id: booking._id, tracking_code: booking.trackingCode },
       callback: function (response) {
-        // Don't trust this callback alone — verify server-side before showing success
         submitBtn.innerHTML = `<span class="loading-spin"></span> Confirming payment…`;
         apiFetch("/api/payments/verify", { method: "POST", body: { reference: response.reference } })
           .then(() => showSuccess(booking.trackingCode))
           .catch(() => {
-            errorEl.textContent = "We received a payment response but couldn't confirm it yet. Your booking code is " + booking.trackingCode + " — contact the rider if this doesn't resolve shortly.";
+            errorEl.textContent = "We received a payment response but couldn't confirm it yet. Your booking code is " + booking.trackingCode + " — contact us if this doesn't resolve shortly.";
             errorEl.style.display = "block";
             submitBtn.disabled = false;
             submitBtn.textContent = "Continue to payment";
@@ -177,7 +184,7 @@
       onClose: function () {
         submitBtn.disabled = false;
         submitBtn.textContent = "Continue to payment";
-        errorEl.textContent = "Payment window closed — your booking is saved as unpaid. You can pay later by contacting the rider with your code: " + booking.trackingCode;
+        errorEl.textContent = "Payment window closed — your booking is saved as unpaid. You can pay later by contacting us with your code: " + booking.trackingCode;
         errorEl.style.display = "block";
       }
     });
@@ -191,4 +198,4 @@
   }
 </script>
 </body>
-            </html>
+  </html>
