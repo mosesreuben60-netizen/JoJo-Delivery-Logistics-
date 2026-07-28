@@ -13,9 +13,11 @@
     <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Delivery</a>
     <div class="nav-links">
       <a href="track.html">Track a delivery</a>
-      <a href="admin.html">Rider login</a>
     </div>
-    <span class="status-chip" id="availability-chip">Checking availability…</span>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <a href="driver.html" class="btn btn-ghost">Driver</a>
+      <span class="status-chip" id="availability-chip">Checking availability…</span>
+    </div>
   </nav>
 
   <main class="wrap" style="padding: 40px 24px 60px;">
@@ -62,7 +64,7 @@
     </form>
   </main>
 
-  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span></div>
+  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span><br><a href="driver.html" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
 </div>
 
 <script src="https://js.paystack.co/v1/inline.js"></script>
@@ -98,12 +100,12 @@
   (async () => {
     const chip = document.getElementById("availability-chip");
     try {
-      const data = await apiFetch("/api/availability");
+      const data = await apiFetch("/api/drivers/available-count");
       if (data.isAvailable) {
-        chip.textContent = "Rider available now";
+        chip.textContent = "A rider is online now";
         chip.classList.remove("wait");
       } else {
-        chip.textContent = "Rider busy — bookings queue up";
+        chip.textContent = "No rider online — bookings queue up";
         chip.classList.add("wait");
       }
     } catch {
