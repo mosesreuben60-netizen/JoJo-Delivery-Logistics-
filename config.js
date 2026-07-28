@@ -5,7 +5,7 @@
 // ===========================================================
 
 const RUSHRIDA_CONFIG = {
-  API_BASE_URL: "https://YOUR-APP-NAME.up.railway.app", // no trailing slash — from Railway after deploy
+  API_BASE_URL: "https://jojo-backend-production.up.railway.app",, // no trailing slash — from Railway after deploy
   PAYSTACK_PUBLIC_KEY: "YOUR_PAYSTACK_PUBLIC_KEY",       // Paystack Dashboard → Settings → API Keys (use pk_test_ while testing)
 
   RIDER_NAME: "Your Rider's Name",
