@@ -3,96 +3,279 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JoJo Delivery — Book a rider in minutes</title>
+<title>JoJo Active Logistics — Fast, safe, reliable delivery</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
-<div class="page">
 
+<!-- AUTH VIEW (login / signup) -->
+<div class="page" id="auth-view">
   <nav class="nav">
-    <div class="brand"><div class="brand-mark">J</div>JoJo Delivery</div>
-    <div class="nav-links">
-      <a href="index.html#how">How it works</a>
-      <a href="track.html">Track a delivery</a>
-    </div>
-    <div style="display:flex; gap:8px;">
-      <a href="driver.html" class="btn btn-ghost">Driver portal</a>
-      <a href="book.html" class="btn btn-primary">Book now</a>
-    </div>
+    <div class="brand"><div class="brand-mark">J</div>JoJo Active Logistics</div>
   </nav>
-
-  <main class="wrap">
-    <section class="hero">
-      <div>
-        <span class="eyebrow">Same-day bike delivery · <span data-rr-city>Warri</span></span>
-        <h1>Skip the WhatsApp back-and-forth. Book, track, done.</h1>
-        <p class="lede">One rider, fully booked-out schedule, live status on every drop. No more "where's my package?" texts at midnight — JoJo Delivery shows you exactly where things stand.</p>
-        <div class="hero-actions">
-          <a href="book.html" class="btn btn-primary">Book a delivery</a>
-          <a href="track.html" class="btn btn-ghost">Track an order</a>
-        </div>
+  <main class="wrap" style="padding: 40px 24px; display:flex; justify-content:center;">
+    <div class="form-card" style="width:100%; max-width:480px;">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-login">Log in</div>
+        <div class="auth-tab" id="tab-signup">Sign up</div>
       </div>
 
-      <div class="waybill">
-        <div class="waybill-row"><span class="waybill-label">Tracking</span><span class="waybill-value">RR-8K3PQ2</span></div>
-        <div class="waybill-row"><span class="waybill-label">Route</span><span class="waybill-value">Effurun → Enerhen</span></div>
-        <div class="waybill-row"><span class="waybill-label">Rider</span><span class="waybill-value" data-rr-rider>Your Rider's Name</span></div>
-        <div class="waybill-row"><span class="waybill-label">Status</span><span class="status-chip">On the way</span></div>
-        <div class="pulse-track">
-          <div class="pulse-dot on"></div><div class="pulse-dot on"></div><div class="pulse-dot on"></div>
-          <div class="pulse-dot"></div><div class="pulse-dot"></div>
-        </div>
-      </div>
-    </section>
+      <form id="login-form">
+        <span class="eyebrow">Welcome back</span>
+        <h1 style="font-size:1.4rem; margin-top:6px;">Log in to book a delivery</h1>
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" required>
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" required>
+        <div class="error-text" id="login-error"></div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:20px;" id="login-btn">Log in</button>
+      </form>
 
-    <section class="section" id="how">
-      <div class="section-head">
-        <span class="eyebrow">How it works</span>
-        <h2 style="margin-top:8px; font-size:1.7rem;">Three steps, no group chat required</h2>
-      </div>
-      <div class="grid-3">
-        <div class="card">
-          <div class="card-icon">①</div>
-          <h3>Book your slot</h3>
-          <p>Pick a delivery tier, drop pickup and drop-off details, and pay securely — no calling around to check if the rider is free.</p>
+      <form id="signup-form" style="display:none;">
+        <span class="eyebrow">Create your account</span>
+        <h1 style="font-size:1.4rem; margin-top:6px;">Join JoJo Active Logistics</h1>
+        <label for="su-name">Full name</label>
+        <input type="text" id="su-name" required>
+        <div class="field-row">
+          <div>
+            <label for="su-email">Email</label>
+            <input type="email" id="su-email" required>
+          </div>
+          <div>
+            <label for="su-phone">Phone</label>
+            <input type="tel" id="su-phone" required>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-icon">②</div>
-          <h3>Get your tracking code</h3>
-          <p>Every booking gets a short code like RR-8K3PQ2. Use it any time to see exactly what stage your delivery is at.</p>
-        </div>
-        <div class="card">
-          <div class="card-icon">③</div>
-          <h3>Watch it move</h3>
-          <p>Status updates from pickup to drop-off, so you know when to expect your package — without sending a single follow-up message.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="section-head">
-        <span class="eyebrow">Pricing</span>
-        <h2 style="margin-top:8px; font-size:1.7rem;">Straightforward tiers</h2>
-      </div>
-      <div class="grid-3" id="pricing-cards">
-        <!-- filled by JS from config.js -->
-      </div>
-    </section>
+        <label for="su-password">Password <span style="color:var(--slate-dim); font-weight:400;">(min. 8 characters)</span></label>
+        <input type="password" id="su-password" required minlength="8">
+        <div class="error-text" id="signup-error"></div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:20px;" id="signup-btn">Create account</button>
+      </form>
+    </div>
   </main>
-
-  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span><br><a href="driver.html" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
+  <div class="footer">JoJo Active Logistics · <span id="footer-address"></span><br><a href="https://mosesreuben60-netizen.github.io/jojo-driver-portal/" target="_blank" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
 </div>
 
+<!-- APP HOME (logged-in customer view) -->
+<div class="page" id="app-view" style="display:none;">
+  <nav class="nav">
+    <div class="brand"><div class="brand-mark">J</div>JoJo Active Logistics</div>
+    <a href="#" id="logout-link" style="color:var(--slate); font-size:0.88rem;">Sign out</a>
+  </nav>
+
+  <div class="app-greeting">
+    <div class="hello" id="greeting-text">Good morning</div>
+    <div class="sub">Ready to make a delivery?</div>
+  </div>
+
+  <div class="app-map-card" id="home-map"></div>
+
+  <form class="app-search" id="search-form">
+    <input type="text" id="dropoff-search" placeholder="Where are you sending to?" autocomplete="off">
+  </form>
+
+  <div class="quick-actions">
+    <a href="book.html" class="btn btn-primary" style="grid-column: 1 / -1;">📦 Book Delivery</a>
+  </div>
+  <div class="action-secondary-row">
+    <a href="track.html" class="action-card">
+      <span class="icon">🔍</span>
+      <span class="label">Track Delivery</span>
+    </a>
+    <a href="#" class="action-card" id="history-link">
+      <span class="icon">🧾</span>
+      <span class="label">Delivery History</span>
+    </a>
+  </div>
+
+  <div class="bike-banner">
+    <div class="text">
+      <h3>We deliver more than packages</h3>
+      <p>Fast response · Safe handling · Timely delivery, every trip.</p>
+    </div>
+    <svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="45" cy="105" r="24" fill="none" stroke="#FFC400" stroke-width="6"/>
+      <circle cx="155" cy="105" r="24" fill="none" stroke="#FFC400" stroke-width="6"/>
+      <rect x="120" y="45" width="45" height="38" rx="6" fill="#FFC400"/>
+      <text x="142" y="70" font-size="11" fill="#0B1533" text-anchor="middle" font-family="sans-serif" font-weight="700">JoJo</text>
+      <path d="M45 105 L75 60 L110 60" stroke="#F5F7FF" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M75 60 L95 60 L120 83" stroke="#F5F7FF" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <circle cx="95" cy="52" r="10" fill="#F5F7FF"/>
+      <path d="M78 105 L120 105" stroke="#F5F7FF" stroke-width="6" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <h2 style="font-size:1.1rem; margin: 0 24px 14px;">Recent deliveries</h2>
+  <div class="history-list" id="history-list"><p class="history-empty">Loading…</p></div>
+
+  <div class="footer">JoJo Active Logistics · <span id="footer-address-2"></span><br><a href="https://mosesreuben60-netizen.github.io/jojo-driver-portal/" target="_blank" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script>
-  const grid = document.getElementById("pricing-cards");
-  RUSHRIDA_CONFIG.TIERS.forEach(t => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `<h3>${t.label}</h3><p>${t.desc}</p><p style="color:var(--orange); font-family:var(--mono); margin-top:10px; font-size:0.95rem;">${formatNaira(t.price)}</p>`;
-    grid.appendChild(card);
+  document.getElementById("footer-address").textContent = RUSHRIDA_CONFIG.SERVICE_ADDRESS;
+  document.getElementById("footer-address-2").textContent = RUSHRIDA_CONFIG.SERVICE_ADDRESS;
+
+  const authView = document.getElementById("auth-view");
+  const appView = document.getElementById("app-view");
+
+  function showAuth() { authView.style.display = "flex"; appView.style.display = "none"; }
+  function showApp() {
+    authView.style.display = "none";
+    appView.style.display = "block";
+    renderGreeting();
+    initHomeMap();
+    loadHistory();
+  }
+
+  if (getCustomerToken()) showApp(); else showAuth();
+
+  // ---- Tabs ----
+  const tabLogin = document.getElementById("tab-login");
+  const tabSignup = document.getElementById("tab-signup");
+  const loginForm = document.getElementById("login-form");
+  const signupForm = document.getElementById("signup-form");
+  tabLogin.addEventListener("click", () => {
+    tabLogin.classList.add("active"); tabSignup.classList.remove("active");
+    loginForm.style.display = "block"; signupForm.style.display = "none";
   });
+  tabSignup.addEventListener("click", () => {
+    tabSignup.classList.add("active"); tabLogin.classList.remove("active");
+    signupForm.style.display = "block"; loginForm.style.display = "none";
+  });
+
+  // ---- Login ----
+  loginForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const btn = document.getElementById("login-btn");
+    const errEl = document.getElementById("login-error");
+    errEl.style.display = "none";
+    btn.disabled = true;
+    btn.innerHTML = `<span class="loading-spin"></span> Logging in…`;
+    try {
+      const { token, customer } = await apiFetch("/api/customers/login", {
+        method: "POST",
+        body: {
+          email: document.getElementById("login-email").value.trim(),
+          password: document.getElementById("login-password").value
+        }
+      });
+      setCustomerSession(token, customer);
+      showApp();
+    } catch (err) {
+      errEl.textContent = err.message || "Couldn't log in — check your details.";
+      errEl.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Log in";
+    }
+  });
+
+  // ---- Signup ----
+  signupForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const btn = document.getElementById("signup-btn");
+    const errEl = document.getElementById("signup-error");
+    errEl.style.display = "none";
+    btn.disabled = true;
+    btn.innerHTML = `<span class="loading-spin"></span> Creating account…`;
+    try {
+      const { token, customer } = await apiFetch("/api/customers/signup", {
+        method: "POST",
+        body: {
+          name: document.getElementById("su-name").value.trim(),
+          email: document.getElementById("su-email").value.trim(),
+          phone: document.getElementById("su-phone").value.trim(),
+          password: document.getElementById("su-password").value
+        }
+      });
+      setCustomerSession(token, customer);
+      showApp();
+    } catch (err) {
+      errEl.textContent = err.message || "Couldn't create your account — try again.";
+      errEl.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Create account";
+    }
+  });
+
+  document.getElementById("logout-link").addEventListener("click", e => {
+    e.preventDefault();
+    clearCustomerSession();
+    showAuth();
+  });
+
+  function handleAuthError(err) {
+    if (err.status === 401) {
+      clearCustomerSession();
+      showAuth();
+      return true;
+    }
+    return false;
+  }
+
+  // ---- Greeting ----
+  function renderGreeting() {
+    const profile = getCustomerProfile();
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    const firstName = profile && profile.name ? profile.name.split(" ")[0] : "";
+    document.getElementById("greeting-text").textContent = firstName ? `${timeGreeting}, ${firstName}` : timeGreeting;
+  }
+
+  // ---- Map ----
+  function initHomeMap() {
+    const { lat, lng } = RUSHRIDA_CONFIG.MAP_CENTER;
+    const map = L.map("home-map", { zoomControl: false, dragging: true }).setView([lat, lng], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 18
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map).bindPopup(RUSHRIDA_CONFIG.SERVICE_ADDRESS);
+  }
+
+  // ---- Search bar → go to booking with drop-off prefilled ----
+  document.getElementById("search-form").addEventListener("submit", e => {
+    e.preventDefault();
+    const value = document.getElementById("dropoff-search").value.trim();
+    window.location.href = value ? `book.html?dropoff=${encodeURIComponent(value)}` : "book.html";
+  });
+
+  // ---- History ----
+  const historyList = document.getElementById("history-list");
+  document.getElementById("history-link").addEventListener("click", e => {
+    e.preventDefault();
+    historyList.scrollIntoView({ behavior: "smooth" });
+  });
+
+  async function loadHistory() {
+    try {
+      const bookings = await apiFetch("/api/customers/me/bookings", { auth: true });
+      if (!bookings.length) {
+        historyList.innerHTML = `<p class="history-empty">No deliveries yet — your first one is just a tap away.</p>`;
+        return;
+      }
+      historyList.innerHTML = bookings.slice(0, 5).map(b => `
+        <div class="job-card">
+          <div class="job-card-top">
+            <div>
+              <span class="job-code">${b.trackingCode}</span>
+              <div class="job-route">${b.pickupAddress} → ${b.dropoffAddress}</div>
+            </div>
+            <span class="badge ${b.status === "delivered" ? "badge-done" : b.status === "cancelled" ? "badge-cancel" : b.status === "pending" ? "badge-pending" : "badge-progress"}">${b.status.replace("_"," ")}</span>
+          </div>
+          <div class="job-meta">${b.tierLabel} · ${formatNaira(b.price)} · <a href="track.html?code=${b.trackingCode}" style="color:var(--blue-bright);">Track →</a></div>
+        </div>
+      `).join("");
+    } catch (err) {
+      if (handleAuthError(err)) return;
+      historyList.innerHTML = `<p class="history-empty">Couldn't load your delivery history.</p>`;
+    }
+  }
 </script>
 </body>
-</html>
+  </html>
