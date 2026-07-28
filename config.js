@@ -1,20 +1,23 @@
 // ===========================================================
-// JoJo Delivery — configuration
-// Fill these in once your Railway API is deployed and you have a
-// Paystack account. See README.md for step-by-step instructions.
+// JoJo Active Logistics — configuration
 // ===========================================================
 
 const RUSHRIDA_CONFIG = {
-  API_BASE_URL: "https://YOUR-APP-NAME.up.railway.app", // no trailing slash — from Railway after deploy
-  PAYSTACK_PUBLIC_KEY: "YOUR_PAYSTACK_PUBLIC_KEY",       // Paystack Dashboard → Settings → API Keys (use pk_test_ while testing)
+  API_BASE_URL: "https://jojo-backend-production.up.railway.app", // your Railway URL, no trailing slash
 
-  RIDER_NAME: "Your Rider's Name",
-  RIDER_PHONE: "2348000000000",                          // international format, used for WhatsApp deep links
+  PAYSTACK_PUBLIC_KEY: "YOUR_PAYSTACK_PUBLIC_KEY", // Paystack Dashboard → Settings → API Keys
+
+  BUSINESS_NAME: "JoJo Active Logistics",
+  RIDER_PHONE: "2348105591555",       // used for the call/WhatsApp fallback links (international format)
+  WHATSAPP_NUMBER: "2349019866988",   // separate WhatsApp number from the flyer
   SERVICE_CITY: "Warri",
+  SERVICE_ADDRESS: "Airport Road by Westend Road, Delta State",
+
+  // Map center for the home-screen map preview (Warri, Delta State)
+  MAP_CENTER: { lat: 5.5160, lng: 5.7500 },
 
   // Display copy for the booking form. Prices here are for show only —
-  // the server recalculates the real price from its own tier list, so
-  // editing this alone won't change what customers are charged. Keep
+  // the server recalculates the real price from its own tier list. Keep
   // this in sync with server/src/tiers.js when you change pricing.
   TIERS: [
     { id: "bike_light",  label: "Bike – Light Package", desc: "Docs, small parcels, under 5kg", price: 1500 },
