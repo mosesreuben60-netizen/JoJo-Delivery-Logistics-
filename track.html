@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Track a delivery — JoJo Delivery</title>
+<title>Track a delivery — JoJo Active Logistics</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
@@ -11,12 +11,12 @@
 <div class="page">
 
   <nav class="nav">
-    <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Delivery</a>
+    <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Active Logistics</a>
     <div class="nav-links">
       <a href="book.html">Book a delivery</a>
     </div>
     <div style="display:flex; gap:8px;">
-      <a href="driver.html" class="btn btn-ghost">Driver</a>
+      <a href="https://mosesreuben60-netizen.github.io/jojo-driver-portal/" target="_blank" class="btn btn-ghost">Driver</a>
       <a href="book.html" class="btn btn-primary">Book now</a>
     </div>
   </nav>
@@ -36,13 +36,14 @@
     <div id="result-area"></div>
   </main>
 
-  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span><br><a href="driver.html" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
+  <div class="footer">JoJo Active Logistics · <span id="footer-address"></span><br><a href="https://mosesreuben60-netizen.github.io/jojo-driver-portal/" target="_blank" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script>
+  document.getElementById("footer-address").textContent = RUSHRIDA_CONFIG.SERVICE_ADDRESS;
   let map = null;
   let driverMarker = null;
   let pollTimer = null;
@@ -144,4 +145,4 @@
   }
 </script>
 </body>
-                                                                                                              </html>
+</html>
