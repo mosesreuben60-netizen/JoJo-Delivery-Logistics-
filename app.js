@@ -4,24 +4,24 @@
 // (no Supabase client involved).
 // ===========================================================
 
-const ADMIN_TOKEN_KEY = "jojo_admin_token";
+const DRIVER_TOKEN_KEY = "jojo_driver_token";
 
-function getAdminToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY);
+function getDriverToken() {
+  return localStorage.getItem(DRIVER_TOKEN_KEY);
 }
-function setAdminToken(token) {
-  localStorage.setItem(ADMIN_TOKEN_KEY, token);
+function setDriverToken(token) {
+  localStorage.setItem(DRIVER_TOKEN_KEY, token);
 }
-function clearAdminToken() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
+function clearDriverToken() {
+  localStorage.removeItem(DRIVER_TOKEN_KEY);
 }
 
-// Wrapper around fetch that talks to the API, attaches the admin
+// Wrapper around fetch that talks to the API, attaches the driver's
 // token when present, and throws a friendly error on failure.
 async function apiFetch(path, { method = "GET", body, auth = false } = {}) {
   const headers = { "Content-Type": "application/json" };
   if (auth) {
-    const token = getAdminToken();
+    const token = getDriverToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
@@ -78,6 +78,49 @@ function statusIndex(status) {
 function whatsappLink(message) {
   const phone = RUSHRIDA_CONFIG.RIDER_PHONE.replace(/\D/g, "");
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+// ---------------------------------------------------------------------
+// Live location sharing — used on driver.html while a driver is "online".
+// Uses the phone's own GPS (via the browser) as the location source.
+// Sends an update roughly every 15 seconds, not on every GPS tick, to
+// avoid hammering the API and draining battery.
+// ---------------------------------------------------------------------
+let _locationWatchId = null;
+let _lastSentAt = 0;
+const LOCATION_SEND_INTERVAL_MS = 15000;
+
+function startSharingLocation(onUpdate) {
+  if (!navigator.geolocation) {
+    if (onUpdate) onUpdate({ error: "This device/browser doesn't support location sharing." });
+    return;
+  }
+  _locationWatchId = navigator.geolocation.watchPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords;
+      const now = Date.now();
+      if (now - _lastSentAt >= LOCATION_SEND_INTERVAL_MS) {
+        _lastSentAt = now;
+        apiFetch("/api/drivers/me/location", {
+          method: "PATCH",
+          auth: true,
+          body: { lat: latitude, lng: longitude }
+        }).catch(() => {}); // a single dropped update isn't worth surfacing an error
+      }
+      if (onUpdate) onUpdate({ lat: latitude, lng: longitude });
+    },
+    (err) => {
+      if (onUpdate) onUpdate({ error: "Couldn't get location — check location permissions." });
+    },
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+  );
+}
+
+function stopSharingLocation() {
+  if (_locationWatchId !== null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(_locationWatchId);
+    _locationWatchId = null;
+  }
 }
 
 // Applies rider name/city/tiers from config.js into any element with data-rr-* attrs
