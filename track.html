@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Track a delivery — JoJo Delivery</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
 <div class="page">
@@ -13,9 +14,11 @@
     <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Delivery</a>
     <div class="nav-links">
       <a href="book.html">Book a delivery</a>
-      <a href="admin.html">Rider login</a>
     </div>
-    <a href="book.html" class="btn btn-primary">Book now</a>
+    <div style="display:flex; gap:8px;">
+      <a href="driver.html" class="btn btn-ghost">Driver</a>
+      <a href="book.html" class="btn btn-primary">Book now</a>
+    </div>
   </nav>
 
   <main class="wrap" style="padding: 48px 24px 60px;">
@@ -33,12 +36,18 @@
     <div id="result-area"></div>
   </main>
 
-  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span></div>
+  <div class="footer">JoJo Delivery · Independent bike courier service · <span data-rr-city>Warri</span><br><a href="driver.html" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script>
+  let map = null;
+  let driverMarker = null;
+  let pollTimer = null;
+  let currentCode = null;
+
   const resultArea = document.getElementById("result-area");
   const form = document.getElementById("lookup-form");
   const input = document.getElementById("code-input");
@@ -57,9 +66,23 @@
 
   async function lookup(code) {
     resultArea.innerHTML = `<p style="text-align:center; color:var(--slate);">Looking up ${code}…</p>`;
+    if (pollTimer) clearInterval(pollTimer);
+    currentCode = code;
     try {
       const booking = await apiFetch(`/api/bookings/code/${encodeURIComponent(code)}`);
       render(booking);
+      // Keep checking for updates while the delivery is actively moving
+      if (["confirmed", "picked_up", "in_transit"].includes(booking.status)) {
+        pollTimer = setInterval(async () => {
+          try {
+            const updated = await apiFetch(`/api/bookings/code/${encodeURIComponent(currentCode)}`);
+            render(updated);
+            if (!["confirmed", "picked_up", "in_transit"].includes(updated.status)) {
+              clearInterval(pollTimer);
+            }
+          } catch {}
+        }, 15000);
+      }
     } catch {
       resultArea.innerHTML = `<p style="text-align:center; color:var(--red);">No booking found for that code. Double-check and try again.</p>`;
     }
@@ -85,6 +108,8 @@
       `).join("");
     }
 
+    const hasLiveLocation = b.driverLocation && b.driverLocation.lat != null && !cancelled;
+
     resultArea.innerHTML = `
       <div class="waybill" style="max-width:520px; margin:0 auto 32px;">
         <div class="waybill-row"><span class="waybill-label">Tracking</span><span class="waybill-value">${b.trackingCode}</span></div>
@@ -92,9 +117,31 @@
         <div class="waybill-row"><span class="waybill-label">Service</span><span class="waybill-value">${b.tierLabel}</span></div>
         <div class="waybill-row"><span class="waybill-label">Payment</span><span class="waybill-value">${b.paymentStatus === "paid" ? "Paid" : "Unpaid"} · ${formatNaira(b.price)}</span></div>
       </div>
+      ${hasLiveLocation ? '<div class="map-container" id="live-map"></div>' : ""}
       <div class="timeline">${stepsHtml}</div>
     `;
+
+    if (hasLiveLocation) {
+      initOrUpdateMap(b.driverLocation.lat, b.driverLocation.lng);
+    } else if (map) {
+      map.remove();
+      map = null;
+    }
+  }
+
+  function initOrUpdateMap(lat, lng) {
+    if (!map) {
+      map = L.map("live-map").setView([lat, lng], 14);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18
+      }).addTo(map);
+      driverMarker = L.marker([lat, lng]).addTo(map).bindPopup("Rider's current location");
+    } else {
+      driverMarker.setLatLng([lat, lng]);
+      map.panTo([lat, lng]);
+    }
   }
 </script>
 </body>
-  </html>
+                                                                                                              </html>
