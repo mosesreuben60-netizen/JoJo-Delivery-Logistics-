@@ -154,7 +154,8 @@ textarea{ resize: vertical; min-height: 80px; }
 .success-banner{
   background: rgba(79,174,126,0.12); border:1px solid rgba(79,174,126,0.3); color: var(--moss-bright);
   border-radius:10px; padding: 16px; margin-bottom:18px; font-size:0.9rem; display:none;
-}/* ---------- tracking ---------- */
+      }
+   /* ---------- tracking ---------- */
 .track-lookup{ display:flex; gap:10px; max-width:480px; margin: 0 auto 36px; }
 .track-lookup input{ flex:1; font-family: var(--mono); }
 .timeline{ max-width:520px; margin: 0 auto; }
@@ -198,6 +199,25 @@ tr:last-child td{ border-bottom:none; }
 select.mini{ padding:6px 10px; font-size:0.82rem; width:auto; }
 
 .footer{ padding: 28px 24px; border-top:1px solid var(--panel-line); color: var(--slate-dim); font-size:0.82rem; text-align:center; margin-top:auto; }
+
+/* ---------- map ---------- */
+.map-container{ width:100%; height:280px; border-radius: var(--radius); overflow:hidden; border:1px solid var(--panel-line); margin: 0 auto 28px; max-width:520px; }
+.leaflet-container{ background: var(--panel) !important; }
+
+/* ---------- auth tabs (driver portal) ---------- */
+.auth-tabs{ display:flex; gap:0; margin-bottom:22px; border:1px solid var(--panel-line); border-radius:10px; overflow:hidden; }
+.auth-tab{ flex:1; text-align:center; padding:12px; font-size:0.9rem; font-weight:600; color:var(--slate); cursor:pointer; background:var(--ink-soft); }
+.auth-tab.active{ background: var(--orange); color: var(--ink); }
+
+/* ---------- job pool cards (driver dashboard) ---------- */
+.job-card{ background: var(--panel); border:1px solid var(--panel-line); border-radius:12px; padding:16px; margin-bottom:12px; }
+.job-card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:8px; }
+.job-code{ font-family: var(--mono); color: var(--orange); font-size:0.85rem; }
+.job-route{ font-size:0.92rem; color: var(--paper); margin:4px 0; }
+.job-meta{ color: var(--slate-dim); font-size:0.8rem; }
+.online-toggle{ display:flex; align-items:center; gap:12px; background: var(--panel); border:1px solid var(--panel-line); padding:14px 18px; border-radius:12px; margin-bottom:24px; }
+.online-dot{ width:10px; height:10px; border-radius:50%; background: var(--slate-dim); }
+.online-dot.live{ background: var(--moss-bright); box-shadow: 0 0 0 4px rgba(79,174,126,0.2); }
 
 .loading-spin{ width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color: var(--ink); border-radius:50%; animation: spin .7s linear infinite; }
 @keyframes spin{ to{ transform: rotate(360deg); } }
