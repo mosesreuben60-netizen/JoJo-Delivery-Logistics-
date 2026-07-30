@@ -160,7 +160,7 @@ textarea{ resize: vertical; min-height: 80px; }
 .success-banner{
   background: rgba(79,174,126,0.12); border:1px solid rgba(79,174,126,0.3); color: var(--moss-bright);
   border-radius:10px; padding: 16px; margin-bottom:18px; font-size:0.9rem; display:none;
-   }/* ---------- tracking ---------- */
+                                                   }/* ---------- tracking ---------- */
 .track-lookup{ display:flex; gap:10px; max-width:480px; margin: 0 auto 36px; }
 .track-lookup input{ flex:1; font-family: var(--mono); }
 .timeline{ max-width:520px; margin: 0 auto; }
@@ -264,6 +264,19 @@ select.mini{ padding:6px 10px; font-size:0.82rem; width:auto; }
 .history-list{ margin: 0 24px 24px; }
 .history-empty{ color: var(--slate); text-align:center; padding: 24px; }
 
+/* ---------- auth page hero (login/signup) ---------- */
+.auth-shell{ display:grid; grid-template-columns: 1fr 1fr; gap:40px; align-items:center; padding: 48px 24px; min-height: calc(100vh - 160px); }
+.auth-hero{
+  background: linear-gradient(135deg, var(--blue) 0%, #0F2A8F 100%); border-radius: var(--radius);
+  padding: 36px 28px; text-align:center;
+}
+.live-clock{ font-family: var(--mono); font-size: 2.1rem; font-weight:700; color: var(--yellow); letter-spacing:0.02em; }
+.live-clock-date{ color: rgba(245,247,255,0.7); font-size:0.85rem; margin-top:2px; margin-bottom:22px; }
+.auth-form-card{ margin:0; }
+@media (max-width: 860px){
+  .auth-shell{ grid-template-columns:1fr; padding-top:24px; }
+}
+
 .loading-spin{ width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color: var(--ink); border-radius:50%; animation: spin .7s linear infinite; }
 @keyframes spin{ to{ transform: rotate(360deg); } }
 
@@ -276,4 +289,4 @@ select.mini{ padding:6px 10px; font-size:0.82rem; width:auto; }
   .admin-nav{ display:flex; gap:6px; }
   .stat-grid{ grid-template-columns:repeat(2,1fr); }
   .nav-links{ display:none; }
-   }
+                                                                  }
