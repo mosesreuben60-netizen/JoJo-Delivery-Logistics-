@@ -15,7 +15,7 @@
       <a href="track.html">Track a delivery</a>
     </div>
     <div style="display:flex; align-items:center; gap:10px;">
-      <a href="https://mosesreuben60-netizen.github.io/jojo-driver-portal/" target="_blank" class="btn btn-ghost">Driver</a>
+      
       <span class="status-chip" id="availability-chip">Checking availability…</span>
     </div>
   </nav>
@@ -45,6 +45,8 @@
       <label for="dropoff_address">Drop-off address</label>
       <input type="text" id="dropoff_address" required placeholder="Where is it going?">
 
+      <div id="smart-estimate" style="display:none; margin-top:10px; padding:12px 14px; background:var(--ink-soft); border-radius:10px; font-size:0.85rem; color:var(--slate);"></div>
+
       <label for="package_note">Package details <span style="color:var(--slate-dim); font-weight:400;">(optional)</span></label>
       <textarea id="package_note" placeholder="What is it, roughly how big, anything fragile…"></textarea>
 
@@ -59,7 +61,7 @@
     </form>
   </main>
 
-  <div class="footer">JoJo Active Logistics · <span id="footer-address"></span><br><a href="https://mosesreuben60-netizen.github.io/jojo-driver-portal/" target="_blank" style="color:var(--slate-dim); text-decoration:underline;">Driver portal</a></div>
+  <div class="footer">JoJo Active Logistics · <span id="footer-address"></span></div>
 </div>
 
 <script src="https://js.paystack.co/v1/inline.js"></script>
@@ -98,6 +100,31 @@
   if (params.get("dropoff")) {
     document.getElementById("dropoff_address").value = params.get("dropoff");
   }
+
+  // Smart estimate — updates as the customer finishes typing either address
+  const pickupInput = document.getElementById("pickup_address");
+  const dropoffInput = document.getElementById("dropoff_address");
+  const estimateBox = document.getElementById("smart-estimate");
+
+  const runEstimate = debounce(async () => {
+    const pickup = pickupInput.value.trim();
+    const dropoff = dropoffInput.value.trim();
+    if (pickup.length < 5 || dropoff.length < 5) {
+      estimateBox.style.display = "none";
+      return;
+    }
+    estimateBox.style.display = "block";
+    estimateBox.textContent = "Estimating distance and time…";
+    const result = await estimateDelivery(pickup, dropoff);
+    if (!result) {
+      estimateBox.textContent = "Couldn't estimate this route — addresses may be too vague. You can still book.";
+      return;
+    }
+    estimateBox.innerHTML = `📍 Approx. <strong style="color:var(--paper);">${result.distanceKm} km</strong> · Estimated arrival in <strong style="color:var(--paper);">~${result.estimatedMinutes} mins</strong> after pickup`;
+  }, 900);
+
+  pickupInput.addEventListener("input", runEstimate);
+  dropoffInput.addEventListener("input", runEstimate);
 
   document.getElementById("whatsapp-fallback").href =
     whatsappLink("Hi! I'd like to book a delivery — can we sort the details here?");
@@ -196,6 +223,8 @@
     successBanner.style.display = "block";
     successBanner.innerHTML = `Booking confirmed! Your tracking code is <strong style="font-family:var(--mono);">${code}</strong>. <a href="track.html?code=${code}" style="color:var(--moss-bright); text-decoration:underline;">Track it now →</a>`;
   }
+  initFaqWidget();
+
 </script>
 </body>
   </html>
