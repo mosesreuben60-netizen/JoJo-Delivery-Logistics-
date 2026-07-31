@@ -10,7 +10,7 @@
 <div class="page">
 
   <nav class="nav">
-    <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Active Logistics</a>
+    <a href="index.html" class="brand"><img src="assets/logo.png" alt="JoJo Active Logistics" class="brand-mark-img"></a>
     <div class="nav-links">
       <a href="track.html">Track a delivery</a>
     </div>
@@ -39,7 +39,10 @@
       <label>Delivery type</label>
       <div class="tier-group" id="tier-group"></div>
 
-      <label for="pickup_address">Pickup address</label>
+      <label for="pickup_address" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Pickup address</span>
+        <button type="button" id="use-location-btn" style="background:none; border:none; color:var(--yellow); font-size:0.78rem; cursor:pointer; padding:0;">📍 Use my current location</button>
+      </label>
       <input type="text" id="pickup_address" required placeholder="Where should the rider collect the package?">
 
       <label for="dropoff_address">Drop-off address</label>
@@ -125,6 +128,39 @@
 
   pickupInput.addEventListener("input", runEstimate);
   dropoffInput.addEventListener("input", runEstimate);
+
+  // "Use my current location" — one-time GPS read, reverse-geocoded into a readable address
+  document.getElementById("use-location-btn").addEventListener("click", () => {
+    const btn = document.getElementById("use-location-btn");
+    if (!navigator.geolocation) {
+      alert("Your browser doesn't support location access.");
+      return;
+    }
+    btn.textContent = "📍 Finding you…";
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const data = await apiFetch(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`);
+          if (data.found) {
+            pickupInput.value = data.address;
+            pickupInput.dispatchEvent(new Event("input"));
+          } else {
+            alert("Couldn't determine an address for your location — please type it in.");
+          }
+        } catch {
+          alert("Couldn't look up your address right now — please type it in.");
+        } finally {
+          btn.textContent = "📍 Use my current location";
+        }
+      },
+      () => {
+        alert("Location access was denied or unavailable — please type your address in.");
+        btn.textContent = "📍 Use my current location";
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  });
 
   document.getElementById("whatsapp-fallback").href =
     whatsappLink("Hi! I'd like to book a delivery — can we sort the details here?");
@@ -227,4 +263,4 @@
 
 </script>
 </body>
-  </html>
+      </html>
