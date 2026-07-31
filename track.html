@@ -11,7 +11,7 @@
 <div class="page">
 
   <nav class="nav">
-    <a href="index.html" class="brand"><div class="brand-mark">J</div>JoJo Active Logistics</a>
+    <a href="index.html" class="brand"><img src="assets/logo.png" alt="JoJo Active Logistics" class="brand-mark-img"></a>
     <div class="nav-links">
       <a href="book.html">Book a delivery</a>
     </div>
@@ -46,6 +46,7 @@
   document.getElementById("footer-address").textContent = RUSHRIDA_CONFIG.SERVICE_ADDRESS;
   let map = null;
   let driverMarker = null;
+  let customerMarker = null;
   let pollTimer = null;
   let currentCode = null;
 
@@ -119,11 +120,13 @@
         <div class="waybill-row"><span class="waybill-label">Payment</span><span class="waybill-value">${b.paymentStatus === "paid" ? "Paid" : "Unpaid"} · ${formatNaira(b.price)}</span></div>
       </div>
       ${hasLiveLocation ? '<div class="map-container" id="live-map"></div>' : ""}
+      ${hasLiveLocation ? '<div style="text-align:center; margin:-16px auto 24px;"><button id="show-my-location-btn" class="btn btn-ghost" style="font-size:0.82rem; padding:8px 14px;">📍 Show my location on the map</button><p id="distance-note" style="color:var(--slate); font-size:0.8rem; margin-top:8px;"></p></div>' : ""}
       <div class="timeline">${stepsHtml}</div>
     `;
 
     if (hasLiveLocation) {
       initOrUpdateMap(b.driverLocation.lat, b.driverLocation.lng);
+      document.getElementById("show-my-location-btn").addEventListener("click", () => showMyLocation(b.driverLocation));
     } else if (map) {
       map.remove();
       map = null;
@@ -142,6 +145,41 @@
       driverMarker.setLatLng([lat, lng]);
       map.panTo([lat, lng]);
     }
+  }
+
+  // Opt-in only — the browser's location prompt only appears after the
+  // customer taps the button, never automatically on page load.
+  function showMyLocation(driverLocation) {
+    const btn = document.getElementById("show-my-location-btn");
+    const note = document.getElementById("distance-note");
+    if (!navigator.geolocation) {
+      note.textContent = "Your browser doesn't support location access.";
+      return;
+    }
+    btn.textContent = "📍 Finding you…";
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        if (!customerMarker) {
+          customerMarker = L.circleMarker([latitude, longitude], {
+            radius: 9, color: "#FFC400", fillColor: "#FFC400", fillOpacity: 0.9, weight: 2
+          }).addTo(map).bindPopup("You are here");
+        } else {
+          customerMarker.setLatLng([latitude, longitude]);
+        }
+        const bounds = L.latLngBounds([[latitude, longitude], [driverLocation.lat, driverLocation.lng]]);
+        map.fitBounds(bounds, { padding: [30, 30] });
+
+        const distanceKm = haversineKm(latitude, longitude, driverLocation.lat, driverLocation.lng);
+        note.textContent = `Your rider is approximately ${(Math.round(distanceKm * 10) / 10)} km from you.`;
+        btn.textContent = "📍 Refresh my location";
+      },
+      () => {
+        note.textContent = "Location access was denied — can't show your position.";
+        btn.textContent = "📍 Show my location on the map";
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
   }
   initFaqWidget();
 
